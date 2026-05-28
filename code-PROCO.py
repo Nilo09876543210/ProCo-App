@@ -10,13 +10,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# Verlauf im Speicher initialisieren (falls noch nicht geschehen)
+# Verlauf im Speicher initialisieren
 if "verlauf" not in st.session_state:
     st.session_state.verlauf = []
+if "aktive_suche" not in st.session_state:
+    st.session_state.aktive_suche = ""
 
 # Callback-Funktion für die Verlaufs-Buttons
 def lade_aus_verlauf(thema):
     st.session_state.user_input_key = thema
+    st.session_state.aktive_suche = thema
 
 # Ein schickes, dunkles, abstraktes Hintergrundbild für perfekten Kontrast
 bg_url = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop"
@@ -54,7 +57,6 @@ st.markdown(f"""
         margin-bottom: 3rem; 
     }}
     
-    /* Boxen mit hellem, solidem Hintergrund -> Schrift DARIN ist dunkel für perfekten Kontrast */
     .pro-card {{ 
         background-color: #ffffff !important; 
         padding: 26px; 
@@ -82,7 +84,6 @@ st.markdown(f"""
         margin-top: 30px; 
     }}
     
-    /* Erzwingt dunkle Schriftfarbe IN den Karten für maximale Lesbarkeit */
     .pro-card *, .con-card *, .fazit-card * {{
         color: #0f172a !important;
     }}
@@ -105,7 +106,6 @@ with st.sidebar:
     st.write("---")
     st.header("🕒 Suchverlauf")
     
-    # Zeigt den Verlauf an
     if st.session_state.verlauf:
         for eintrag in st.session_state.verlauf:
             st.button(
@@ -125,16 +125,17 @@ user_input = st.text_input(
     key="user_input_key"
 )
 
-# Verlauf füllen, wenn eine neue Suche stattfindet
-if user_input and (not st.session_state.verlauf or user_input != st.session_state.verlauf[0]):
-    if user_input in st.session_state.verlauf:
-        st.session_state.verlauf.remove(user_input)
-    st.session_state.verlauf.insert(0, user_input)
-    if len(st.session_state.verlauf) > 10:
-        st.session_state.verlauf.pop()
-    st.rerun()
+# Button zum Abschicken – das verhindert automatische Doppel-Feuer!
+start_button = st.button("⚖️ Debatte starten", use_container_width=True)
 
-# --- GECACHTE FUNKTIONEN GEGEN DEN 429-FEHLER ---
+if start_button and user_input:
+    st.session_state.aktive_suche = user_input
+    if user_input not in st.session_state.verlauf:
+        st.session_state.verlauf.insert(0, user_input)
+        if len(st.session_state.verlauf) > 10:
+            st.session_state.verlauf.pop()
+
+# --- GECACHTE FUNKTIONEN ---
 @st.cache_data(show_spinner=False)
 def get_web_context(query):
     try:
@@ -173,7 +174,7 @@ def generate_fazit_cached(api_key, query, pro_text, con_text):
     return response.text
 
 # --- HAUPTLOGIK ---
-if user_input:
+if st.session_state.aktive_suche:
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
     else:
@@ -182,10 +183,8 @@ if user_input:
 
     with st.spinner("Generiere Debatte..."):
         try:
-            search_context = get_web_context(user_input)
-            
-            # Gecachte Argumente abrufen
-            ergebnis = generate_debate_cached(api_key, user_input, search_context, anzahl_argumente)
+            search_context = get_web_context(st.session_state.aktive_suche)
+            ergebnis = generate_debate_cached(api_key, st.session_state.aktive_suche, search_context, anzahl_argumente)
             
             if "---TRENNUNG---" in ergebnis:
                 pro_text, con_text = ergebnis.split("---TRENNUNG---")
@@ -193,24 +192,19 @@ if user_input:
                 pro_text = ergebnis
                 con_text = "### 🔴 Kontra-Argumente\n* Fehler beim automatischen Aufteilen der Argumente."
 
-            # Spalten-Layout anzeigen
             col1, col2 = st.columns(2)
-
             with col1:
                 st.markdown('<div class="pro-card">', unsafe_allow_html=True)
                 st.markdown(pro_text.strip())
                 st.markdown('</div>', unsafe_allow_html=True)
-
             with col2:
                 st.markdown('<div class="con-card">', unsafe_allow_html=True)
                 st.markdown(con_text.strip())
                 st.markdown('</div>', unsafe_allow_html=True)
 
-            # Gecachtes neutrales Fazit
             st.markdown('<div class="fazit-card">', unsafe_allow_html=True)
             st.markdown('### 🤖 Impuls zur Meinungsbildung', unsafe_allow_html=True)
-            
-            fazit_text = generate_fazit_cached(api_key, user_input, pro_text, con_text)
+            fazit_text = generate_fazit_cached(api_key, st.session_state.aktive_suche, pro_text, con_text)
             st.markdown(fazit_text)
             st.markdown('</div>', unsafe_allow_html=True)
 
