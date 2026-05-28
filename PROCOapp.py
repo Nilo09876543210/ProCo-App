@@ -1,4 +1,4 @@
-            import streamlit as st
+import streamlit as st
 from duckduckgo_search import DDGS
 from google import genai
 from google.genai import types
@@ -82,7 +82,7 @@ st.markdown(f"""
         margin-top: 30px; 
     }}
     
-    /* Erzwingt dunkle Schriftfarbe INDEN Karten für maximale Lesbarkeit */
+    /* Erzwingt dunkle Schriftfarbe IN den Karten für maximale Lesbarkeit */
     .pro-card *, .con-card *, .fazit-card * {{
         color: #0f172a !important;
     }}
@@ -127,12 +127,9 @@ user_input = st.text_input(
 
 # Verlauf füllen, wenn eine neue Suche stattfindet
 if user_input and (not st.session_state.verlauf or user_input != st.session_state.verlauf[0]):
-    # Falls das Thema schon im Verlauf existiert, alten Eintrag löschen
     if user_input in st.session_state.verlauf:
         st.session_state.verlauf.remove(user_input)
-    # Neu oben hinzufügen
     st.session_state.verlauf.insert(0, user_input)
-    # Auf 10 begrenzen
     if len(st.session_state.verlauf) > 10:
         st.session_state.verlauf.pop()
     st.rerun()
@@ -209,4 +206,3 @@ if user_input:
 
         except Exception as e:
             st.error(f"Ein Fehler ist aufgetreten: {e}")
-        
