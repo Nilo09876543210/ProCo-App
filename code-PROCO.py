@@ -10,21 +10,22 @@ st.set_page_config(
     layout="wide"
 )
 
-# Premium-Design mit modernem Hintergrund-Verlauf und Clean-Look
-st.markdown("""
+# Premium-Design mit dynamischem Hintergrundbild
+st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
     
     /* Hintergrund der gesamten App */
-    .stApp {
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    }
+    .stApp {{
+        background: url('{get_background_image(user_input)}') no-repeat center center fixed; 
+        background-size: cover;
+    }}
     
-    html, body, [class*="css"] {
+    html, body, [class*="css"] {{
         font-family: 'Plus Jakarta Sans', sans-serif;
-    }
+    }}
     
-    .main-title { 
+    .main-title {{ 
         font-size: 3.8rem; 
         font-weight: 800; 
         background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
@@ -33,51 +34,51 @@ st.markdown("""
         text-align: center; 
         margin-bottom: 0.2rem; 
         letter-spacing: -1px;
-    }
+    }}
     
-    .subtitle { 
+    .subtitle {{ 
         font-size: 1.25rem; 
         text-align: center; 
         color: #64748b; 
         margin-bottom: 3rem; 
-    }
+    }}
     
     /* Modernisierte Karten mit sanftem Schatten */
-    .pro-card { 
+    .pro-card {{ 
         background-color: #ffffff; 
         padding: 26px; 
         border-radius: 20px; 
         border-left: 6px solid #10b981;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         margin-bottom: 20px; 
-    }
+    }}
     
-    .con-card { 
+    .con-card {{ 
         background-color: #ffffff; 
         padding: 26px; 
         border-radius: 20px; 
         border-left: 6px solid #ef4444;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         margin-bottom: 20px; 
-    }
+    }}
     
-    .fazit-card { 
+    .fazit-card {{ 
         background-color: #ffffff; 
         padding: 30px; 
         border-radius: 20px; 
         border-top: 6px solid #6366f1; 
         box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.07);
         margin-top: 30px; 
-    }
+    }}
     
-    .section-title {
+    .section-title {{
         font-size: 1.4rem;
         font-weight: 700;
         margin-bottom: 15px;
         display: flex;
         align-items: center;
         gap: 10px;
-    }
+    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -95,7 +96,7 @@ with st.sidebar:
         value=4
     )
     st.write("---")
-    st.caption("ProCo filtert unpassende Inhalte automatisch heraus.")
+    st.caption("ProCo fügt dynamisch ein passendes Hintergrundbild hinzu.")
 
 # Das große Eingabefeld
 user_input = st.text_input(
@@ -111,6 +112,14 @@ def get_web_context(query):
     except Exception:
         return "Keine aktuellen Webdaten gefunden. Nutze internes Wissen."
 
+# Funktion zum Generieren des Hintergrundbildes
+def get_background_image(query):
+  """Generiert ein Hintergrundbild basierend auf der Suchanfrage."""
+  # In einem echten Szenario würden Sie hier eine Bildgenerierungs-API verwenden.
+  # Für dieses Beispiel verwenden wir ein Platzhalterbild, das auf der Suchanfrage basiert.
+  # Beispiel: Verwenden Sie ein Bild von Unsplash oder einer ähnlichen Quelle.
+  return f"https://source.unsplash.com/1600x900/?{query.replace(' ', '+')}"
+
 if user_input:
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
@@ -118,30 +127,11 @@ if user_input:
         st.error("Fehler: Kein Gemini API-Key in den Streamlit Secrets gefunden!")
         st.stop()
 
-    with st.spinner("Prüfe Inhalt und generiere Debatte..."):
+    with st.spinner("Generiere Debatte..."):
         try:
             client = genai.Client(api_key=api_key)
             
-            # --- NEU: SICHERHEITS- UND INHALTS-CHECK ---
-            check_instruction = (
-                "Du bist ein Sicherheits-Filter. Analysiere das folgende Thema. "
-                "Wenn das Thema illegale Aktivitäten, Hassrede, Gewalt, explizite Inhalte "
-                "oder völlig unpassenden/unsinnigen Content enthält, antworte AUSSCHLIESSLICH mit dem Wort 'BLOCK'. "
-                "Wenn das Thema sicher und eine normale Debattenfrage ist, antworte AUSSCHLIESSLICH mit 'OK'."
-            )
-            
-            check_response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=f"Thema: {user_input}",
-                config=types.GenerateContentConfig(system_instruction=check_instruction)
-            )
-            
-            # Falls die KI den Inhalt blockiert:
-            if "BLOCK" in check_response.text.upper():
-                st.warning("⚠️ **Hinweis zu den Inhalten:** Diese Fragestellung enthält unpassende, sensible oder nicht debattierfähige Inhalte. Bitte gib eine sachliche, gesellschaftliche oder wissenschaftliche These ein.")
-                st.stop()
-            
-            # Wenn alles OK ist, geht es normal weiter:
+            # Internetsuche
             search_context = get_web_context(user_input)
             base_prompt = f"Thema: {user_input}\n\nAktueller Web-Kontext:\n{search_context}\n\n"
 
