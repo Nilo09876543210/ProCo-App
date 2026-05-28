@@ -1,4 +1,4 @@
-import streamlit as st
+            import streamlit as st
 from duckduckgo_search import DDGS
 from google import genai
 from google.genai import types
@@ -10,40 +10,35 @@ st.set_page_config(
     layout="wide"
 )
 
-# Verlauf im Speicher initialisieren, falls er noch nicht existiert
+# Verlauf im Speicher initialisieren (falls noch nicht geschehen)
 if "verlauf" not in st.session_state:
     st.session_state.verlauf = []
 
-# Hilfsfunktion für das Hintergrundbild
-def get_background_url(query):
-    if not query:
-        return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600"
-    search_term = query.replace(" ", ",").replace("?", "")
-    return f"https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1600&auto=format&fit=crop&sig={search_term}"
+# Callback-Funktion für die Verlaufs-Buttons
+def lade_aus_verlauf(thema):
+    st.session_state.user_input_key = thema
 
-# Aktuelles Thema ermitteln
-current_input = st.session_state.get("user_input_key", "")
-bg_url = get_background_url(current_input)
+# Ein schickes, dunkles, abstraktes Hintergrundbild für perfekten Kontrast
+bg_url = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop"
 
-# Premium-Design mit starkem Kontrast für perfekte Lesbarkeit
+# CSS für absolut perfekte Lesbarkeit (Dunkles Premium-Design)
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
     .stApp {{
         background: url('{bg_url}') no-repeat center center fixed; 
         background-size: cover;
     }}
     
-    html, body, [class*="css"] {{
-        font-family: 'Plus Jakarta Sans', sans-serif;
+    html, body, [class*="css"], .stMarkdown, p, li {{
+        font-family: 'Inter', sans-serif !important;
     }}
     
-    /* Dunkler, edler Titel über dem Bild */
     .main-title {{ 
         font-size: 3.8rem; 
         font-weight: 800; 
-        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center; 
@@ -54,59 +49,50 @@ st.markdown(f"""
     .subtitle {{ 
         font-size: 1.25rem; 
         text-align: center; 
-        color: #0f172a; 
-        font-weight: 700;
+        color: #e2e8f0; 
+        font-weight: 500;
         margin-bottom: 3rem; 
-        background-color: rgba(255, 255, 255, 0.7);
-        padding: 5px 15px;
-        border-radius: 10px;
-        display: inline-block;
-        margin-left: auto;
-        margin-right: auto;
     }}
     
-    /* Karten sind jetzt solid und dunkelgrau/anthrazit gefärbt für maximalen Schriftkontrast */
+    /* Boxen mit hellem, solidem Hintergrund -> Schrift DARIN ist dunkel für perfekten Kontrast */
     .pro-card {{ 
-        background-color: #1e293b; 
-        color: #f8fafc !important;
+        background-color: #ffffff !important; 
         padding: 26px; 
         border-radius: 20px; 
-        border-left: 6px solid #10b981;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        border-left: 8px solid #10b981;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
         margin-bottom: 20px; 
     }}
     
     .con-card {{ 
-        background-color: #1e293b; 
-        color: #f8fafc !important;
+        background-color: #ffffff !important; 
         padding: 26px; 
         border-radius: 20px; 
-        border-left: 6px solid #ef4444;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        border-left: 8px solid #ef4444;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
         margin-bottom: 20px; 
     }}
     
     .fazit-card {{ 
-        background-color: #0f172a; 
-        color: #f8fafc !important;
+        background-color: #f8fafc !important; 
         padding: 30px; 
         border-radius: 20px; 
-        border-top: 6px solid #6366f1; 
-        box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.4);
+        border-top: 8px solid #6366f1; 
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
         margin-top: 30px; 
     }}
     
-    /* Erzwingt weiße Textfarbe für Markdown-Listen in den Karten */
-    .pro-card p, .pro-card li, .con-card p, .con-card li, .fazit-card p, .fazit-card li {{
-        color: #f8fafc !important;
+    /* Erzwingt dunkle Schriftfarbe INDEN Karten für maximale Lesbarkeit */
+    .pro-card *, .con-card *, .fazit-card * {{
+        color: #0f172a !important;
     }}
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">⚖️ ProCo</div>', unsafe_allow_html=True)
-st.markdown('<div style="text-align: center;"><div class="subtitle">Zwei Perspektiven. Aktuelle Live-Fakten. Deine Meinungsbildung.</div></div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Zwei Perspektiven. Aktuelle Live-Fakten. Deine Meinungsbildung.</div>', unsafe_allow_html=True)
 
-# --- SIDEBAR MIT EINSTELLUNGEN & VERLAUF ---
+# --- SIDEBAR (LINKS) ---
 with st.sidebar:
     st.header("⚙️ Einstellungen")
     anzahl_argumente = st.slider(
@@ -117,13 +103,20 @@ with st.sidebar:
     )
     
     st.write("---")
-    st.header("🕒 Letzte 10 Diskussionen")
+    st.header("🕒 Suchverlauf")
     
-    # Verlauf anzeigen. Wenn ein Button geklickt wird, wird das Suchfeld befüllt
-    for eintrag in st.session_state.verlauf:
-        if st.button(f"🔍 {eintrag}", key=f"hist_{eintrag}", use_container_width=True):
-            st.session_state.user_input_key = eintrag
-            st.rerun()
+    # Zeigt den Verlauf an
+    if st.session_state.verlauf:
+        for eintrag in st.session_state.verlauf:
+            st.button(
+                f"🔍 {eintrag}", 
+                key=f"btn_{eintrag}", 
+                on_click=lade_aus_verlauf, 
+                args=(eintrag,),
+                use_container_width=True
+            )
+    else:
+        st.caption("Noch keine Suchanfragen vorhanden.")
 
 # Das große Eingabefeld
 user_input = st.text_input(
@@ -132,9 +125,14 @@ user_input = st.text_input(
     key="user_input_key"
 )
 
-# Thema zum Verlauf hinzufügen (Doppelte vermeiden, max. 10 Einträge)
-if user_input and user_input not in st.session_state.verlauf:
+# Verlauf füllen, wenn eine neue Suche stattfindet
+if user_input and (not st.session_state.verlauf or user_input != st.session_state.verlauf[0]):
+    # Falls das Thema schon im Verlauf existiert, alten Eintrag löschen
+    if user_input in st.session_state.verlauf:
+        st.session_state.verlauf.remove(user_input)
+    # Neu oben hinzufügen
     st.session_state.verlauf.insert(0, user_input)
+    # Auf 10 begrenzen
     if len(st.session_state.verlauf) > 10:
         st.session_state.verlauf.pop()
     st.rerun()
@@ -145,7 +143,7 @@ def get_web_context(query):
             results = [r['body'] for r in ddgs.text(query, max_results=4)]
             return "\n\n".join(results)
     except Exception:
-        return "Keine aktuellen Webdaten gefunden. Nutze internes Wissen."
+        return "Keine aktuellen Webdaten gefunden."
 
 if user_input:
     if "GEMINI_API_KEY" in st.secrets:
@@ -198,7 +196,7 @@ if user_input:
 
             # Neutrales Fazit
             st.markdown('<div class="fazit-card">', unsafe_allow_html=True)
-            st.markdown('<h3 style="color: #6366f1;">🤖 Impuls zur Meinungsbildung</h3>', unsafe_allow_html=True)
+            st.markdown('### 🤖 Impuls zur Meinungsbildung', unsafe_allow_html=True)
             
             fazit_prompt = (
                 f"Fasse diese Debatte zu '{user_input}' in einem kurzen, absolut neutralen Fazit zusammen. "
@@ -211,3 +209,4 @@ if user_input:
 
         except Exception as e:
             st.error(f"Ein Fehler ist aufgetreten: {e}")
+        
