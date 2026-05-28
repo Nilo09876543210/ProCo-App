@@ -3,26 +3,45 @@ from duckduckgo_search import DDGS
 from google import genai
 from google.genai import types
 
-# 1. App-Einrichtung & Webseiten-Design
+# 1. App-Einrichtung
 st.set_page_config(
     page_title="ProCo - KI Debatten-Plattform",
     page_icon="⚖️",
     layout="wide"
 )
 
-# Premium-Design mit dynamischem Hintergrundbild
+# Hilfsfunktion für das Hintergrundbild (Muss VOR dem CSS definiert sein!)
+def get_background_url(query):
+    if not query:
+        # Ein neutrales, schickes Standardbild, wenn noch nichts eingegeben wurde
+        return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600"
+    
+    # Bereinigt den Suchbegriff für die URL
+    search_term = query.replace(" ", ",").replace("?", "")
+    # Nutzt die offizielle, stabile Unsplash-Schnittstelle für themenbasierte Bilder
+    return f"https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1600&auto=format&fit=crop&sig={search_term}"
+
+# Standardwert oder Nutzereingabe für das Bild holen
+current_input = st.session_state.get("user_input_key", "")
+bg_url = get_background_url(current_input)
+
+# Premium-Design mit dynamischem Hintergrundbild und halbtransparenten Boxen
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
     
-    /* Hintergrund der gesamten App */
     .stApp {{
-        background: url('{get_background_image(user_input)}') no-repeat center center fixed; 
+        background: url('{bg_url}') no-repeat center center fixed; 
         background-size: cover;
     }}
     
     html, body, [class*="css"] {{
         font-family: 'Plus Jakarta Sans', sans-serif;
+    }}
+    
+    /* Weißer, leicht transparenter Schleier über dem Hintergrund für bessere Lesbarkeit */
+    .stAppBg {{
+        background-color: rgba(255, 255, 255, 0.4);
     }}
     
     .main-title {{ 
@@ -39,52 +58,44 @@ st.markdown(f"""
     .subtitle {{ 
         font-size: 1.25rem; 
         text-align: center; 
-        color: #64748b; 
+        color: #1e293b; 
+        font-weight: 600;
         margin-bottom: 3rem; 
     }}
     
-    /* Modernisierte Karten mit sanftem Schatten */
+    /* Karten mit starkem "Glassmorphism"-Effekt (halbtransparent weiß) */
     .pro-card {{ 
-        background-color: #ffffff; 
+        background-color: rgba(255, 255, 255, 0.9); 
         padding: 26px; 
         border-radius: 20px; 
         border-left: 6px solid #10b981;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         margin-bottom: 20px; 
     }}
     
     .con-card {{ 
-        background-color: #ffffff; 
+        background-color: rgba(255, 255, 255, 0.9); 
         padding: 26px; 
         border-radius: 20px; 
         border-left: 6px solid #ef4444;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         margin-bottom: 20px; 
     }}
     
     .fazit-card {{ 
-        background-color: #ffffff; 
+        background-color: rgba(255, 255, 255, 0.95); 
         padding: 30px; 
         border-radius: 20px; 
         border-top: 6px solid #6366f1; 
-        box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.07);
+        box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.15);
         margin-top: 30px; 
-    }}
-    
-    .section-title {{
-        font-size: 1.4rem;
-        font-weight: 700;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
     }}
     </style>
 """, unsafe_allow_html=True)
 
 # Titel und Subtitel
 st.markdown('<div class="main-title">⚖️ ProCo</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Zwei Perspektiven. Aktuelle Live-Fakten. Sichere Meinungsbildung.</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Zwei Perspektiven. Aktuelle Live-Fakten. Deine Meinungsbildung.</div>', unsafe_allow_html=True)
 
 # Sidebar für die Einstellungen
 with st.sidebar:
@@ -95,13 +106,12 @@ with st.sidebar:
         max_value=8,
         value=4
     )
-    st.write("---")
-    st.caption("ProCo fügt dynamisch ein passendes Hintergrundbild hinzu.")
 
 # Das große Eingabefeld
 user_input = st.text_input(
     "Gib eine These oder Fragestellung ein:",
     placeholder="z. B. Sollte künstliche Intelligenz an Schulen erlaubt sein?",
+    key="user_input_key"
 )
 
 def get_web_context(query):
@@ -112,14 +122,6 @@ def get_web_context(query):
     except Exception:
         return "Keine aktuellen Webdaten gefunden. Nutze internes Wissen."
 
-# Funktion zum Generieren des Hintergrundbildes
-def get_background_image(query):
-  """Generiert ein Hintergrundbild basierend auf der Suchanfrage."""
-  # In einem echten Szenario würden Sie hier eine Bildgenerierungs-API verwenden.
-  # Für dieses Beispiel verwenden wir ein Platzhalterbild, das auf der Suchanfrage basiert.
-  # Beispiel: Verwenden Sie ein Bild von Unsplash oder einer ähnlichen Quelle.
-  return f"https://source.unsplash.com/1600x900/?{query.replace(' ', '+')}"
-
 if user_input:
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
@@ -127,63 +129,57 @@ if user_input:
         st.error("Fehler: Kein Gemini API-Key in den Streamlit Secrets gefunden!")
         st.stop()
 
-    with st.spinner("Generiere Debatte..."):
+    with st.spinner("Generiere Debatte... (Ressourcenschonender Modus)"):
         try:
             client = genai.Client(api_key=api_key)
-            
-            # Internetsuche
             search_context = get_web_context(user_input)
+            
+            # Ressourcenschonend: Holt Pro und Kontra in EINEM einzigen Aufruf (spart Quota!)
+            debatten_instruction = (
+                "Du bist ein analytischer Debatten-Bot. Generiere starke Argumente basierend auf dem Kontext. "
+                "Antworte auf Deutsch. Trenne die beiden Blöcke strikt mit dem Textzeichen '---TRENNUNG---'.\n\n"
+                f"Format:\n### 🟢 Pro-Argumente\n[Hier genau {anzahl_argumente} Aufzählungspunkte]\n"
+                "---TRENNUNG---\n"
+                f"### 🔴 Kontra-Argumente\n[Hier genau {anzahl_argumente} Aufzählungspunkte]"
+            )
+            
             base_prompt = f"Thema: {user_input}\n\nAktueller Web-Kontext:\n{search_context}\n\n"
 
-            # Anweisungen für die Bots (mit strikter Vorgabe für Formatierung)
-            pro_instruction = (
-                f"Du bist ein analytischer Debatten-Bot, der AUSSCHLIESSLICH starke Pro-Argumente liefert. "
-                f"Nutze die Web-Daten für aktuelle Fakten. Antworte auf Deutsch. "
-                f"Liefere als Überschrift '### 🟢 Pro-Argumente'. Liefere darunter EXAKT {anzahl_argumente} "
-                f"übersichtliche Bulletpoints."
-            )
-
-            con_instruction = (
-                f"Du bist ein analytischer Debatten-Bot, der AUSSCHLIESSLICH starke Kontra-Argumente liefert. "
-                f"Nutze die Web-Daten für aktuelle Fakten. Antworte auf Deutsch. "
-                f"Liefere als Überschrift '### 🔴 Kontra-Argumente'. Liefere darunter EXAKT {anzahl_argumente} "
-                f"übersichtliche Bulletpoints."
-            )
-
-            # KI-Abfragen
-            pro_response = client.models.generate_content(
+            response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=base_prompt,
-                config=types.GenerateContentConfig(system_instruction=pro_instruction)
+                config=types.GenerateContentConfig(system_instruction=debatten_instruction)
             )
 
-            con_response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=base_prompt,
-                config=types.GenerateContentConfig(system_instruction=con_instruction)
-            )
+            ergebnis = response.text
+            
+            # Text splitten
+            if "---TRENNUNG---" in ergebnis:
+                pro_text, con_text = ergebnis.split("---TRENNUNG---")
+            else:
+                pro_text = ergebnis
+                con_text = "### 🔴 Kontra-Argumente\n* Fehler beim automatischen Aufteilen der Argumente."
 
             # Spalten-Layout anzeigen
             col1, col2 = st.columns(2)
 
             with col1:
                 st.markdown('<div class="pro-card">', unsafe_allow_html=True)
-                st.markdown(pro_response.text)
+                st.markdown(pro_text.strip())
                 st.markdown('</div>', unsafe_allow_html=True)
 
             with col2:
                 st.markdown('<div class="con-card">', unsafe_allow_html=True)
-                st.markdown(con_response.text)
+                st.markdown(con_text.strip())
                 st.markdown('</div>', unsafe_allow_html=True)
 
-            # Neutrales Fazit
+            # Neutrales Fazit (2. und letzte Anfrage)
             st.markdown('<div class="fazit-card">', unsafe_allow_html=True)
             st.markdown('### 🤖 Impuls zur Meinungsbildung')
             
             fazit_prompt = (
                 f"Fasse diese Debatte zu '{user_input}' in einem kurzen, absolut neutralen Fazit zusammen. "
-                f"Gib keine Meinung vor, sondern zeige auf, worauf es ankommt.\n\n"
-                f"Pro:\n{pro_response.text}\n\nKontra:\n{con_response.text}"
+                f"Zeige sachlich auf, worauf es ankommt.\n\nPro:\n{pro_text}\n\nKontra:\n{con_text}"
             )
 
             fazit_response = client.models.generate_content(model='gemini-2.5-flash', contents=fazit_prompt)
@@ -191,4 +187,4 @@ if user_input:
             st.markdown('</div>', unsafe_allow_html=True)
 
         except Exception as e:
-            st.error(f"Etwas hat nicht geklappt: {e}")
+            st.error(f"Ein Fehler ist aufgetreten (evtl. Minutenlimit von Google erreicht). Bitte kurz warten und erneut versuchen. Details: {e}")
