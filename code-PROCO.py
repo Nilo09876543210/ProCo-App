@@ -53,60 +53,60 @@ if user_input:
         try:
             # 1. Live-Daten aus dem Web holen
             search_context = get_web_context(user_input)
-            
+
             # 2. KI-Verbindung aufbauen
             client = genai.Client(api_key=api_key)
             base_prompt = f"Thema: {user_input}\n\nAktueller Web-Kontext:\n{search_context}\n\n"
-            
+
             # Anweisungen für den Pro-Bot
             pro_instruction = (
                 "Du bist ein analytischer Debatten-Bot, der AUSSCHLIESSLICH starke Pro-Argumente liefert. "
                 "Nutze die Web-Daten für aktuelle Fakten. Antworte auf Deutsch in übersichtlichen Bulletpoints."
             )
-            
+
             # Anweisungen für den Kontra-Bot
             con_instruction = (
-                "Duatischer Debatten-Bot, der AUSSCHLIESSLICH starke Kontra-Argumente liefert. "
+                "Du bist ein analytischer Debatten-Bot, der AUSSCHLIESSLICH starke Kontra-Argumente liefert. "
                 "Nutze die Web-Daten für aktuelle Fakten. Antworte auf Deutsch in übersichtlichen Bulletpoints."
             )
-            
+
             # 3. Beide Bots antworten lassen (gemini-2.5-flash ist super schnell)
             pro_response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=base_prompt,
                 config=types.GenerateContentConfig(system_instruction=pro_instruction)
             )
-            
+
             con_response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=base_prompt,
                 config=types.GenerateContentConfig(system_instruction=con_instruction)
             )
-            
+
             # Spalten auf der Webseite erstellen
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 st.markdown('<div class="pro-box"><h3>🟢 Pro-Argumente</h3></div>', unsafe_allow_html=True)
                 st.markdown(pro_response.text)
-                
+
             with col2:
                 st.markdown('<div class="con-box"><h3>🔴 Kontra-Argumente</h3></div>', unsafe_allow_html=True)
                 st.markdown(con_response.text)
-            
+
             # 4. Das neutrale Fazit erstellen
             st.markdown("---")
             st.markdown('<div class="fazit-box"><h3>🤖 Impuls zur Meinungsbildung (Neutrales Fazit)</h3>', unsafe_allow_html=True)
-            
+
             fazit_prompt = (
                 f"Fasse diese Debatte zu '{user_input}' in einem kurzen, absolut neutralen Fazit zusammen. "
                 f"Gib keine Meinung vor, sondern zeige auf, worauf es ankommt.\n\n"
                 f"Pro:\n{pro_response.text}\n\nKontra:\n{con_response.text}"
             )
-            
+
             fazit_response = client.models.generate_content(model='gemini-2.5-flash', contents=fazit_prompt)
             st.markdown(fazit_response.text)
             st.markdown('</div>', unsafe_allow_html=True)
-            
+
         except Exception as e:
-            st.error(f"Etwas hat nicht geklappt: {e}")
+            st.error(f"Etwas hat nicht gekappt: {e}")
